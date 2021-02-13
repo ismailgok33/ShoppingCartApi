@@ -10,10 +10,10 @@ namespace CicekSepetiTask.Services
 {
     public interface IShoppingCartService
     {
-        Task<BaseResponse<IList<GetItemDto>>> GetAllItems();
-        Task<BaseResponse<GetItemDto>> GetItemById(Guid id);
-        Task<BaseResponse<IList<GetItemDto>>> AddItemToCart(AddItemToCartDto item);
-        Task<BaseResponse<IList<GetItemDto>>> RemoveItemFromCart(Guid id);
-        Task<BaseResponse<GetItemDto>> UpdateItemInCart(UpdateItemDto updatedItemDto);
+        Task<BaseResponse<ShoppingCart>> GetShoppingCart(ShoppingCart shoppingCart);
+        //Task<BaseResponse<GetItemDto>> GetItemById(Guid id);
+        Task<BaseResponse<int?>> AddItemToCart(AddItemToCartDto item, ShoppingCart shoppingCart);
+        Task<BaseResponse<GetItemDto>> RemoveItemFromCart(Guid id, ShoppingCart shoppingCart);
+        Task<BaseResponse<int?>> UpdateItemInCart(UpdateItemDto updatedItemDto, ShoppingCart shoppingCart);
     }
 }

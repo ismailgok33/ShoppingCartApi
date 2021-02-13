@@ -8,8 +8,6 @@ namespace CicekSepetiTask.Dtos
     public class UpdateItemDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public float Price { get; set; }
-        public int Stock { get; set; }
+        public int Quantity { get; set; }
     }
 }

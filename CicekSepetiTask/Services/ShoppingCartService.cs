@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using CicekSepetiTask.Base;
+using CicekSepetiTask.Repositories;
 using CicekSepetiTask.Dtos;
 using CicekSepetiTask.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,52 +13,84 @@ namespace CicekSepetiTask.Services
 {
     public class ShoppingCartService : IShoppingCartService
     {
-        //private IShoppingCartService _shoppingCart;
-
-        private static IList<Item> _itemsInCard = new List<Item>
-        {
-            new Item {Id = Guid.NewGuid(), Name = "testItem"},
-            new Item {Id = Guid.NewGuid(), Name = "testItem2"}
-        };
         private readonly IMapper _mapper;
-
-        public ShoppingCartService(IMapper mapper)
+        private readonly DataContext _context;
+        public ShoppingCartService(IMapper mapper, DataContext context)
         {
+            //repo
             _mapper = mapper;
+            _context = context;
         }
 
-        public async Task<BaseResponse<IList<GetItemDto>>> AddItemToCart(AddItemToCartDto item)
+        public async Task<BaseResponse<int?>> AddItemToCart(AddItemToCartDto itemDto, ShoppingCart shoppingCart)
         {
-            BaseResponse<IList<GetItemDto>> response = new BaseResponse<IList<GetItemDto>>();
-            _itemsInCard.Add(_mapper.Map<Item>(item));
-            response.Data = _itemsInCard.Select(item => _mapper.Map<GetItemDto>(item)).ToList();
+            Item dbItem = await _context.Items.FirstOrDefaultAsync(i => i.Id == itemDto.Id);
+            
+            ShoppingCartItem sci = shoppingCart.ShoppingCartItems.FirstOrDefault(i => i.Item.Id == dbItem.Id);
+            
+            if(sci != null)
+            {
+                sci.Quantity += itemDto.Quantity;
+                if(!isInStock(dbItem, sci))
+                {
+                    //throw new ShoppingCartException("Not enough stock!", 500);
+                    throw new Exception("Not enough stock!");
+                }
+                //_context.ShoppingCartItems.Update(sci);
+            }
+            else
+            {
+                sci = new ShoppingCartItem()
+                {
+                    Id = Guid.NewGuid(),
+                    Item = dbItem,
+                    Quantity = itemDto.Quantity,
+                    ShoppingCartId = shoppingCart.Id
+                };
+
+                if (!isInStock(dbItem, sci))
+                {
+                    //throw new ShoppingCartException("Not enough stock!", 500);
+                    throw new Exception("Not enough stock!");
+                }
+                //await _context.ShoppingCartItems.AddAsync(sci);
+                shoppingCart.ShoppingCartItems.Add(sci);
+                // TODO item count çıkabilir.
+                shoppingCart.ItemCount += 1;
+            }
+            shoppingCart.TotalPrice = shoppingCart.ShoppingCartItems.Sum(item => item.Quantity * item.Item.Price);
+
+            //await _context.SaveChangesAsync();
+            return new BaseResponse<int?> ();
+        }
+
+        public async Task<BaseResponse<ShoppingCart>> GetShoppingCart(ShoppingCart shoppingCart)
+        {
+            BaseResponse<ShoppingCart> response = new BaseResponse<ShoppingCart>();
+            //IList<ShoppingCartItem> dbItems = shoppingCart.ShoppingCartItems;
+            response.Data = shoppingCart;
             return response;
         }
 
-        public async Task<BaseResponse<IList<GetItemDto>>> GetAllItems()
-        {
-            BaseResponse<IList<GetItemDto>> response = new BaseResponse<IList<GetItemDto>>();
-            response.Data = _itemsInCard.Select(item => _mapper.Map<GetItemDto>(item)).ToList();
-            return response;
-        }
-
-        public async Task<BaseResponse<GetItemDto>> GetItemById(Guid id)
+        /*public async Task<BaseResponse<GetItemDto>> GetItemById(Guid id)
         {
             BaseResponse<GetItemDto> response = new BaseResponse<GetItemDto>();
-            response.Data = _mapper.Map<GetItemDto>(_itemsInCard.FirstOrDefault(item => item.Id == id));
+            Item dbItem = await _context.Items.FirstOrDefaultAsync(item => item.Id == id);
+            response.Data = _mapper.Map<GetItemDto>(dbItem);
             return response;
-        }
+        }*/
 
-        public async Task<BaseResponse<IList<GetItemDto>>> RemoveItemFromCart(Guid id)
+        public async Task<BaseResponse<GetItemDto>> RemoveItemFromCart(Guid id, ShoppingCart shoppingCart)
         {
-            BaseResponse<IList<GetItemDto>> response = new BaseResponse<IList<GetItemDto>>();
+            BaseResponse<GetItemDto> response = new BaseResponse<GetItemDto>();
 
             try
             {
-                Item item = _itemsInCard.First(i => i.Id == id);
-                _itemsInCard.Remove(item);
-
-                response.Data = _itemsInCard.Select(item => _mapper.Map<GetItemDto>(item)).ToList();
+                ShoppingCartItem sci = shoppingCart.ShoppingCartItems.First(item => item.Id == id);
+                response.Data = _mapper.Map<GetItemDto>(sci);
+                shoppingCart.ShoppingCartItems.Remove(sci);
+                shoppingCart.ItemCount--;
+                shoppingCart.TotalPrice -= sci.Item.Price * sci.Quantity;
             }
             catch (Exception e)
             {
@@ -67,18 +101,25 @@ namespace CicekSepetiTask.Services
             return response;
         }
 
-        public async Task<BaseResponse<GetItemDto>> UpdateItemInCart(UpdateItemDto updatedItemDto)
+        public async Task<BaseResponse<int?>> UpdateItemInCart(UpdateItemDto updatedItemDto, ShoppingCart shoppingCart)
         {
-            BaseResponse<GetItemDto> response = new BaseResponse<GetItemDto>();
+            BaseResponse<int?> response = new BaseResponse<int?>();
 
             try
             {
-                Item item = _itemsInCard.FirstOrDefault(i => i.Id == updatedItemDto.Id);
-                item.Name = updatedItemDto.Name;
-                item.Price = updatedItemDto.Price;
-                item.Stock = updatedItemDto.Stock;
+                ShoppingCartItem sci = shoppingCart.ShoppingCartItems.FirstOrDefault(i => i.Id == updatedItemDto.Id);
 
-                response.Data = _mapper.Map<GetItemDto>(item);
+                Item dbItem = await _context.Items.FirstOrDefaultAsync(i => i.Id == sci.Item.Id);
+                if (dbItem.Stock < updatedItemDto.Quantity)
+                {
+                    //throw new ShoppingCartException("Not enough stock!", 500);
+                    throw new Exception("Not enough stock!");
+                }
+
+                sci.Quantity = updatedItemDto.Quantity;
+
+                //_context.Items.Update(dbItem);
+                //await _context.SaveChangesAsync();
             } 
             catch(Exception e)
             {
@@ -87,6 +128,16 @@ namespace CicekSepetiTask.Services
                 response.ErrorMessage = e.Message;
             }
             return response;
+        }
+
+        private bool isInStock(Item item, ShoppingCartItem sci)
+        {
+            if (item.Stock < sci.Quantity)
+            {
+                return false;
+                
+            }
+            return true;
         }
     }
 }

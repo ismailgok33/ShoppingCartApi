@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace CicekSepetiTask.Entities
 {
-    public class ShopingCart : BaseEntity
+    public class ShoppingCart : BaseEntity
     {
         public int UserId { get; set; }
         public float TotalPrice { get; set; }
         public int ItemCount { get; set; }
-        public IList<Item> Items { get; set; }
+        public IList<ShoppingCartItem> ShoppingCartItems { get; set; }
     }
 }

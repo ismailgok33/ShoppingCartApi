@@ -2,6 +2,7 @@
 using CicekSepetiTask.Dtos;
 using CicekSepetiTask.Entities;
 using CicekSepetiTask.Services;
+using CicekSepetiTask.Utility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -23,42 +24,55 @@ namespace CicekSepetiTask.Controllers
         }
 
         [HttpGet("GetAll")]
-        public async Task<IActionResult> GetAllItems()
+        public async Task<IActionResult> GetShoppingCart()
         {
-            return Ok(await _shoppingCartService.GetAllItems());
+            ShoppingCart cart = SessionHelper.GetShoppingCart(HttpContext.Session);
+            return Ok(await _shoppingCartService.GetShoppingCart(cart));
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetSingleItem(Guid id)
-        {
-            return Ok(await _shoppingCartService.GetItemById(id));
-        }
+        //[HttpGet("{id}")]
+        //public async Task<IActionResult> GetSingleItem(Guid id)
+        //{
+        //    return Ok(await _shoppingCartService.GetItemById(id));
+        //}
 
         [HttpPost]
         public async Task<IActionResult> AddItem(AddItemToCartDto item)
         {
-            return Ok(await _shoppingCartService.AddItemToCart(item));
+            BaseResponse<int?> resp = new BaseResponse<int?>();
+            ShoppingCart cart = SessionHelper.GetShoppingCart(HttpContext.Session);
+            resp = await _shoppingCartService.AddItemToCart(item, cart);
+            if (resp.Success)
+            {
+                SessionHelper.SetObjectAsJson(HttpContext.Session, "cart", cart);
+                return Ok(resp);
+            }
+            return Ok(resp);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteItem(Guid id)
         {
-            BaseResponse<IList<GetItemDto>> response = await _shoppingCartService.RemoveItemFromCart(id);
+            ShoppingCart cart = SessionHelper.GetShoppingCart(HttpContext.Session);
+            BaseResponse<GetItemDto> response = await _shoppingCartService.RemoveItemFromCart(id, cart);
             if (response.ResponseCode == 404)
             {
                 return NotFound(response);
             }
+            SessionHelper.SetObjectAsJson(HttpContext.Session, "cart", cart);
             return Ok(response);
         }
 
         [HttpPut]
         public async Task<IActionResult> UpdateItem(UpdateItemDto updatedItem)
         {
-            BaseResponse<GetItemDto> response = await _shoppingCartService.UpdateItemInCart(updatedItem);
+            ShoppingCart cart = SessionHelper.GetShoppingCart(HttpContext.Session);
+            BaseResponse<int?> response = await _shoppingCartService.UpdateItemInCart(updatedItem, cart);
             if(response.ResponseCode == 404)
             {
                 return NotFound(response);
             }
+            SessionHelper.SetObjectAsJson(HttpContext.Session, "cart", cart);
             return Ok(response);
         }
     }
