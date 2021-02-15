@@ -3,6 +3,7 @@ using CicekSepetiTask.Dtos;
 using CicekSepetiTask.Entities;
 using CicekSepetiTask.Services;
 using CicekSepetiTask.Utility;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace CicekSepetiTask.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ShoppingCartController : ControllerBase

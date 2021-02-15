@@ -1,0 +1,36 @@
+version: '3.4'
+
+services:
+  ciceksepetitask:
+    image: ${DOCKER_REGISTRY-}ciceksepetitask
+    build:
+      context: .
+      dockerfile: CicekSepetiTask/Dockerfile
+    depends_on:
+        - db
+        - redis_service
+        - migrations
+    environment:
+        DatabaseServer: "db"
+        DatabaseName: "mydb"
+        DatabaseUser: "sa"
+        DatabaseUserPassword: "1Secure*Password1"
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "1Secure*Password1"
+      ACCEPT_EULA: "Y"
+    ports:
+        - "14331:1433"
+  
+  redis_service:
+    image: redis
+    container_name: ciceksepeti_redis
+
+  migrations:
+    build: 
+      context: .
+      dockerfile: CicekSepetiTask/Migrations.Dockerfile
+    depends_on:
+        - db
+    
