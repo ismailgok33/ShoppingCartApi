@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace CicekSepetiTask
 {
+    /// <summary>
+    /// Maps Dto's to Entity Objects and vice versa.
+    /// </summary>
     public class AutoMapperProfile : Profile
     {
         public AutoMapperProfile()

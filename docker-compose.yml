@@ -6,13 +6,18 @@ services:
     build:
       context: .
       dockerfile: CicekSepetiTask/Dockerfile
+    ports:
+      - "49396:80"
+      - "49397:443"
+    networks:
+      - proxynet
     depends_on:
         - demoapi-db
         - redis
-    restart: on-failure:3
+    restart: always
     environment:
         DatabaseServer: "demoapi-db"
-        DatabaseName: "demoapi-db"
+        DatabaseName: "CicekSepetiDB"
         DatabaseUser: "sa"
         DatabaseUserPassword: "MssqlPass123!"
 
@@ -25,9 +30,10 @@ services:
       - "1433:1433"
     expose:
       - "1433"
+    restart: always
     volumes:
       - /var/opt/mssql
-      # we copy our scripts onto the container.
+      # copy scripts onto the container.
       - "./demoapi_sql:/usr/src/app"
     # bash will be executed from that path, our scripts folder
     working_dir: /usr/src/app
@@ -63,4 +69,4 @@ services:
     
 networks:
   proxynet:
-    name: custom_network
+    driver: bridge

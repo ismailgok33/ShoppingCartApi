@@ -9,6 +9,6 @@ namespace CicekSepetiTask.Utility
     {
         OK = 200,
         NotFound = 404,
-        NoStock = 500
+        NoStock = 400
     }
 }

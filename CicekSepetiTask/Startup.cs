@@ -2,7 +2,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AutoMapper;
-using CicekSepetiTask.Autofac;
+using CicekSepetiTask.Filters;
 using CicekSepetiTask.Repositories;
 using CicekSepetiTask.Services;
 using CicekSepetiTask.Utility;
@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,39 +62,24 @@ namespace CicekSepetiTask
                 };
             });
 
-            // var connection = @"Data Source=demoapi-db;Initial Catalog=CicekSepetiDB;Integrated Security=False;User ID=sa;Password=MssqlPass123!";
-            var connection = @"Server=localhost:1433;Database=CicekSepetiDB;User=sa;Password=MssqlPass123!;";
-            var connection2 = @"Data Source=host.docker.internal,1433;Initial Catalog = CicekSepetiDB;Persist Security Info=False;User Id=sa;Password=MssqlPass123!;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30";
-            //var server = Configuration["DatabaseServer"];
-            //var database = Configuration["DatabaseName"];
-            //var user = Configuration["DatabaseUser"];
-            //var password = Configuration["DatabaseUserPassword"];
-            //var connection = String.Format("Server={0};Database={1};User={2};Password={3};", server, database, user, password);
-            services.AddDbContext<DataContext>(x => x.UseSqlServer(connection2));
-            // services.AddDbContext<DataContext>(x => x.UseSqlServer(Configuration.GetConnectionString("ConnectionString")));
-            // services.AddDbContext<DataContext>(x => x.UseSqlServer(Configuration["ConnectionString"]));
-
-            // var container = new ContainerBuilder();
-            // container.Populate(services);
-
-            // var connectionString = Configuration["ConnectionString"];
-            // container.RegisterModule(new ApplicationModule(connectionString));
-            // container.Register(p => Configuration.Get<AppSettings>()).SingleInstance();
-
-            // // services.AddDbContext<DataContext>();
+            var connection = @"Data Source=host.docker.internal,1433;Initial Catalog = CicekSepetiDB;Persist Security Info=False;User Id=sa;Password=MssqlPass123!;MultipleActiveResultSets=true;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30";
+            services.AddDbContext<DataContext>(x => x.UseSqlServer(connection));
             services.AddControllers();
             services.AddAutoMapper(typeof(Startup));
 
             services.AddScoped<IShoppingCartService, ShoppingCartService>();
             services.AddScoped<IUserService, UserService>();
 
-            //services.AddDistributedMemoryCache();
             services.AddSession();
-            services.AddStackExchangeRedisCache(action =>
+
+            services.AddStackExchangeRedisCache(options => { options.Configuration = Configuration["RedisServer"]; });
+
+            services.AddMvc(config =>
             {
-                action.InstanceName = "Redis";
-                action.Configuration = "127.0.0.1:6379";
-            });
+                config.Filters.Add(typeof(HttpGlobalExceptionFilter));
+            })
+                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
             // services.AddSwaggerGen(options =>

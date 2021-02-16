@@ -2,8 +2,8 @@
 wait_time=20s
 password=MssqlPass123!
 
-echo creating resources in $wait_time
-sleep $wait_time
+# echo creating resources in $wait_time
+# sleep $wait_time
 echo starting...
 
 echo 'creating Names DB'

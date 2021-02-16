@@ -7,7 +7,7 @@ namespace CicekSepetiTask.Entities
 {
     public class ShoppingCart : BaseEntity
     {
-        public int UserId { get; set; }
+        public string UserId { get; set; }
         public float TotalPrice { get; set; }
         public int ItemCount { get; set; }
         public IList<ShoppingCartItem> ShoppingCartItems { get; set; }

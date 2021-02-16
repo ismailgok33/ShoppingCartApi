@@ -16,6 +16,9 @@ namespace CicekSepetiTask.Services
     {
         readonly AppSettings _appSettings;
 
+        /// <summary>
+        /// Hard-coded user list
+        /// </summary>
         private List<User> _users = new List<User>
         {
             new User {Id = 1, FirstName = "test1", LastName = "test1", UserName = "test1", Password = "test123"},
@@ -27,7 +30,12 @@ namespace CicekSepetiTask.Services
             _appSettings = appSettings.Value;
         }
 
-
+        /// <summary>
+        /// Authentication method
+        /// </summary>
+        /// <param name="userName"> UserName </param>
+        /// <param name="password"> Password </param>
+        /// <returns> return the Authenticated User and its token to be passed as Bearer Token for authorization </returns>
         public User Authenticate(string userName, string password)
         {
             var user = _users.FirstOrDefault(x => x.UserName == userName && x.Password == password);
@@ -47,6 +55,10 @@ namespace CicekSepetiTask.Services
             return user;
         }
 
+        /// <summary>
+        /// Returns all users
+        /// </summary>
+        /// <returns> Returns all users </returns>
         public List<User> GetAll()
         {
             return _users;
