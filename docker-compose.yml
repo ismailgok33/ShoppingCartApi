@@ -7,30 +7,60 @@ services:
       context: .
       dockerfile: CicekSepetiTask/Dockerfile
     depends_on:
-        - db
-        - redis_service
-        - migrations
+        - demoapi-db
+        - redis
+    restart: on-failure:3
     environment:
-        DatabaseServer: "db"
-        DatabaseName: "mydb"
+        DatabaseServer: "demoapi-db"
+        DatabaseName: "demoapi-db"
         DatabaseUser: "sa"
-        DatabaseUserPassword: "1Secure*Password1"
-  db:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    environment:
-      SA_PASSWORD: "1Secure*Password1"
-      ACCEPT_EULA: "Y"
-    ports:
-        - "14331:1433"
-  
-  redis_service:
-    image: redis
-    container_name: ciceksepeti_redis
+        DatabaseUserPassword: "MssqlPass123!"
 
-  migrations:
-    build: 
-      context: .
-      dockerfile: CicekSepetiTask/Migrations.Dockerfile
-    depends_on:
-        - db
+  demoapi-db:
+    networks:
+      - proxynet
+    image: microsoft/mssql-server-linux:latest
+    container_name: demoapi-db
+    ports:
+      - "1433:1433"
+    expose:
+      - "1433"
+    volumes:
+      - /var/opt/mssql
+      # we copy our scripts onto the container.
+      - "./demoapi_sql:/usr/src/app"
+    # bash will be executed from that path, our scripts folder
+    working_dir: /usr/src/app
+    # run the entrypoint.sh that will import the data AND sqlserver
+    command: sh -c ' chmod +x ./start.sh; ./start.sh & /opt/mssql/bin/sqlservr;'
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "MssqlPass123!"
+  
+  redis:
+    image: "redis:alpine"
+    container_name: redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - proxynet
+
+  phpredisadmin:
+    image: erikdubbelboer/phpredisadmin
+    container_name: phpredisadmin
+    environment:
+      #ADMIN_USER: admin
+      #ADMIN_PASS: admin
+      REDIS_1_HOST: redis
+      REDIS_1_PORT: 6379
+    links:
+      - redis
+    ports:
+      - "8090:80"
+    networks:
+      - proxynet
     
+networks:
+  proxynet:
+    name: custom_network
