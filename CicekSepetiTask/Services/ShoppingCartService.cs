@@ -17,6 +17,7 @@ namespace CicekSepetiTask.Services
     {
         private readonly IMapper _mapper;
         private readonly DataContext _context;
+
         public ShoppingCartService(IMapper mapper, DataContext context)
         {
             _mapper = mapper;
@@ -84,8 +85,10 @@ namespace CicekSepetiTask.Services
         /// <returns> All Items in the Shopping Cart as response </returns>
         public BaseResponse<ShoppingCart> GetShoppingCart(ShoppingCart shoppingCart)
         {
-            BaseResponse<ShoppingCart> response = new BaseResponse<ShoppingCart>();
-            response.Data = shoppingCart;
+            BaseResponse<ShoppingCart> response = new BaseResponse<ShoppingCart>
+            {
+                Data = shoppingCart
+            };
             return response;
         }
 
